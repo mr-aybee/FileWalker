@@ -32,21 +32,29 @@ namespace FileWalker
             var fileName = Console.ReadLine();
             Console.WriteLine("Please root Path:");
             var rootPath = Console.ReadLine();
+            
             if (rootPath == "*")
-                foreach (var drive in Environment.GetLogicalDrives())
+			{
+				foreach (var drive in Environment.GetLogicalDrives())
                 {
                     if (drive != "C:\\")
-                        foreach (var file in GetFiles(drive, fileName))
+					{
+						foreach (var file in GetFiles(drive, fileName))
                         {
                             fileNames.Add(file);
                         }
-                }
-            else
-                foreach (var file in GetFiles(rootPath, fileName))
+					}
+				}
+			}
+			else
+			{
+				foreach (var file in GetFiles(rootPath, fileName))
                 {
                     fileNames.Add(file);
                 }
-            var fileNameNew = "files_" + DateTime.Now.ToString("HHmmss") + ".txt";
+			}
+
+			var fileNameNew = "files_" + DateTime.Now.ToString("HHmmss") + ".txt";
             File.AppendAllLines(fileNameNew, fileNames.ToArray());
 
         WithList:
@@ -71,14 +79,16 @@ namespace FileWalker
             {
                 fileNames.ForEach(X => { System.Diagnostics.Process.Start(X); });
             }
+            
             if (resp == "n" || resp == "no")
             {
                 Console.Clear();
                 goto Start;
             }
+            
             if (resp == "delete")
             {
-                fileNames.ForEach(X => { try { if (File.Exists(X)) File.Delete(X); Console.WriteLine(X); } catch { Console.WriteLine("Error Deleting: " + X); } });
+                fileNames.ForEach(X => { try { if (File.Exists(X)) { File.Delete(X); } Console.WriteLine(X); } catch { Console.WriteLine("Error Deleting: " + X); } });
                 Console.WriteLine("Removed");
             }
             else if (resp == "show")
