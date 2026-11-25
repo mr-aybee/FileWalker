@@ -61,18 +61,20 @@ namespace FileWalker
             Console.WriteLine("Files Found: " + fileNames.Count);
             Console.WriteLine("Commands To Execute[]");
             Console.WriteLine("n | no => to try again");
-            Console.WriteLine("delete => to delte all files found");
+            Console.WriteLine("delete => to delete all files found");
             Console.WriteLine("show => to show all files found");
             Console.WriteLine("file => to show all files found");
             Console.WriteLine("hash => to get hash (MD5 and SHA256) for all files found");
             Console.WriteLine("creationtime now => set creation time of all files found to now");
             Console.WriteLine("creationtime dt:<datetime> => set creation time of all files found to yyyy-mm-dd hh:mm:ss ");
             Console.WriteLine("creationtime modifiedtime => set creation time of all files found to modified time ");
-            Console.WriteLine("execute all => obvious aan! ");
+            Console.WriteLine("execute all => launch all matching files ");
             Console.WriteLine("");
             Console.Write(">>>");
 
-            var resp = Console.ReadLine().ToLower();
+            var input = Console.ReadLine();
+            if (input == null) return;
+            var resp = input.ToLower();
 
 
             if (resp == "execute all")
@@ -181,7 +183,8 @@ namespace FileWalker
         {
             // create Powershell runspace
 
-            Runspace runspace = RunspaceFactory.CreateRunspace();
+            using (Runspace runspace = RunspaceFactory.CreateRunspace())
+            {
 
             // open it
 
@@ -189,7 +192,8 @@ namespace FileWalker
 
             // create a pipeline and feed it the script text
 
-            Pipeline pipeline = runspace.CreatePipeline();
+            using (Pipeline pipeline = runspace.CreatePipeline())
+            {
             pipeline.Commands.AddScript(scriptText);
 
             // add an extra command to transform the script
@@ -220,6 +224,8 @@ namespace FileWalker
             }
 
             return stringBuilder.ToString();
+            }
+            }
         }
 
         public static IEnumerable<string> GetFiles(string root, string searchPattern)
