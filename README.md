@@ -1,44 +1,126 @@
-# FileWalker
+<div align="center">
 
-FileWalker is a command-line utility for Windows designed to search for files within the filesystem and perform various operations on the search results.
+# 📂 FileWalker
 
-## Parameters
+**Find files across every drive, then act on the results — hash, retime, launch or delete them in bulk from one console.**
 
-*   **`fileName`**: The name of the file to search for. This can include wildcards (e.g., `*.log`, `document?.docx`).
-*   **`rootPath`**: The starting directory for the search. You can provide a specific path (e.g., `D:\Users\MyUser\Documents`) or use `*` to search all logical drives on the system (excluding the C: drive).
-*   **`<path_to_file_list.txt>`**: (Command-line argument) When starting the application, you can provide a single argument which is the path to a text file. Each line in this file should be a full path to a file. The application will then attempt to delete every file listed.
+[![CI](https://github.com/mr-aybee/file-walker/actions/workflows/ci.yml/badge.svg)](https://github.com/mr-aybee/file-walker/actions/workflows/ci.yml)
+![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.8-512BD4)
+![platform](https://img.shields.io/badge/platform-Windows-0078D6)
+![type](https://img.shields.io/badge/type-CLI-4EAA25)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Process
+</div>
 
-1.  **Launch the application**: Run `FileWalker.exe`.
-2.  **Provide Search Criteria**:
-    *   The application will first prompt you for the **`fileName`**.
-    *   Next, it will ask for the **`rootPath`**.
-3.  **Search**: The application searches for files matching the `fileName` starting from the `rootPath`. The results are saved to a file named `files_HHmmss.txt` in the application's directory.
-4.  **Perform Operations**: Once the search is complete, a list of commands will be displayed, allowing you to perform actions on the list of found files.
+---
 
-### Available Commands
+## Overview
 
-After a search is completed, you can use the following commands:
+FileWalker is a Windows command-line tool for locating files by name or wildcard, either under one folder or across all logical drives, and then running batch operations on the matches. Every search result set is saved to a timestamped text file, so it can be reviewed, reused or fed back in for deletion.
 
-*   **`n` or `no`**: Clears the current search results and starts a new search.
-*   **`delete`**: Deletes all the files found in the search. A confirmation prompt will appear.
-*   **`show`**: Displays the full path of all found files directly in the console.
-*   **`file`**: Opens the generated text file (e.g., `files_143055.txt`) that contains the list of found file paths.
-*   **`hash`**: Calculates and displays the MD5 and SHA256 hashes for each file found. The results are also appended to a `Hash.txt` file in the respective file's directory.
-*   **`creationtime now`**: Sets the creation and last modified time of all found files to the current system time.
-*   **`creationtime dt:<datetime>`**: Sets the creation and last modified time of all found files to a specific date and time. The expected format is `yyyy-mm-dd hh:mm:ss`.
-*   **`creationtime modifiedtime`**: Sets the creation time of all found files to match their last modified time.
-*   **`execute all`**: Attempts to launch/execute every file found in the search.
+## Features
 
-### Deleting Files from a List
+- 🔎 **Wildcard search** (`*.log`, `report?.docx`) under a path or across all drives (`*`)
+- 📝 **Result snapshots** written to `files_HHmmss.txt`
+- 🔐 **Hashing** — MD5 and SHA-256 for every match (via PowerShell runspace)
+- 🕒 **Timestamp control** — set creation time to now, a specific date, or the modified time
+- 🗑️ **Bulk delete** with confirmation, or delete from a prepared list file
+- ▶️ **Bulk launch** of every matching file
 
-You can also use FileWalker to delete a predefined list of files by passing a text file's path as a command-line argument.
+## How it works
+
+```mermaid
+flowchart TD
+    A[Prompt: file name + root path] --> B{root = * ?}
+    B -- yes --> C[Enumerate all drives]
+    B -- no --> D[Enumerate root path]
+    C & D --> E[Match list → files_HHmmss.txt]
+    E --> F{Command}
+    F --> G[show / file]
+    F --> H[hash → MD5 + SHA-256]
+    F --> I[creationtime …]
+    F --> J[delete · execute all]
+```
+
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| Runtime | C# · .NET Framework 4.8 console app |
+| Hashing | `System.Management.Automation` PowerShell runspace |
+| Filesystem | Recursive, access-error-tolerant enumeration |
+
+## Getting started
+
+### Prerequisites
+
+- Windows with .NET Framework 4.8
+- Visual Studio 2019+ or Build Tools with MSBuild
+
+### Build
 
 ```shell
-FileWalker.exe C:\path\to\your\filelist.txt
+git clone https://github.com/mr-aybee/file-walker.git
+cd file-walker
+nuget restore FileWalkerSolution.sln
+msbuild FileWalkerSolution.sln /p:Configuration=Release
 ```
 
-The application will read every file path from `filelist.txt` and ask for a final confirmation before deleting them.
+The executable is written to `FileWalker/bin/Release/FileWalker.exe`.
 
+## Usage
+
+```text
+> FileWalker.exe
+Please Enter File Name:   *.tmp
+Please root Path:         D:\Projects
+Files Found: 42
+>>> hash
 ```
+
+| Command | Action |
+| --- | --- |
+| `n` / `no` | Start a new search |
+| `show` | Print every matching path |
+| `file` | Open the saved result list |
+| `hash` | Compute MD5 + SHA-256 (also appended to `Hash.txt` beside each file) |
+| `creationtime now` | Set creation/modified time to now |
+| `creationtime dt:<yyyy-mm-dd hh:mm:ss>` | Set a specific timestamp |
+| `creationtime modifiedtime` | Copy modified time into creation time |
+| `delete` | Delete all matches (asks for confirmation) |
+| `execute all` | Launch every matching file |
+
+Delete from a prepared list (one full path per line):
+
+```shell
+FileWalker.exe C:\path\to\filelist.txt
+```
+
+> ⚠️ `delete` and `execute all` act on every match. Review the list with `show` first.
+
+## Project structure
+
+```text
+file-walker/
+├── FileWalkerSolution.sln
+└── FileWalker/
+    ├── Program.cs        # Prompt loop, search and batch commands
+    └── FileSkeleton.cs   # Drive/folder tree model
+```
+
+## Development
+
+- Open `FileWalkerSolution.sln` in Visual Studio; restore NuGet packages on first build.
+- CI builds the solution with MSBuild on Windows for every push and pull request.
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the branch, build and pull-request workflow. Please report security issues privately through [GitHub security advisories](https://github.com/mr-aybee/file-walker/security/advisories/new), not public issues.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md). By participating you agree to uphold it.
+
+## License
+
+Released under the [MIT License](LICENSE). © 2026 Abdullah Shahid.
